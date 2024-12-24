@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+
+from tabulate import tabulate
+import argparse
+import json
+import os
+import subprocess
+
+TEMPLATE_FILE = os.path.expanduser("~/nmap-templates.json")
+
+if not os.path.exists(TEMPLATE_FILE):
+    with open(TEMPLATE_FILE, "w") as file:
+        json.dump({}, file)
+        print("\n" + "="*50)
+        print(f"!! FILE CREATED: nmap-templates.json at {TEMPLATE_FILE} !!".upper())
+        print("="*50 + "\n")
+
+def load_templates():
+    with open(TEMPLATE_FILE, "r") as file:
+        return json.load(file)
+
+def save_templates(templates):
+    try:
+        with open(TEMPLATE_FILE, "w") as file:
+            json.dump(templates, file)
+    except PermissionError:
+        print(f"Error: Permission denied while trying to write to '{TEMPLATE_FILE}'.")
+        print("Try running the script with elevated privileges or changing the file path.")
+        exit(1)
+
+def delete_template(name):
+    templates = load_templates()
+    if name in templates:
+        print(f"Deleting {name} : {templates[name]}")
+        choice = input("Are you sure?")
+        if choice.lower() in ["n", "no"]:
+            print("Aborting deletion.")
+            return
+    del templates[name]
+    save_templates(templates)
+    print(f"{name} deleted.")
+
+
+def create_template(name, command):
+    templates = load_templates()
+    if name in templates:
+        print(f"Template '{name}' already exists.")
+        choice = input("Would you like to overwrite the contents?[y/n]")
+        if choice.lower() in ["n", "no"]:
+            print("Template creation aborted.")
+            return
+    templates[name] = command
+    save_templates(templates)
+    print(f"Template '{name}' saved successfully!")
+
+def execute_template(name, ip):
+    templates = load_templates()
+    if name not in templates:
+        print(f"Error: Template '{name}' not found.")
+        return
+    command = templates[name].replace("<ip>", ip)
+    print(f"Executing: {command}")
+    subprocess.run(command, shell=True)
+
+def list_templates():
+    templates = load_templates()
+    if not templates:
+        print("No templates saved.")
+    else:
+        # Prepare the data for the table
+        table_data = [(name, command) for name, command in templates.items()]
+        
+        # Print the table using tabulate
+        print(tabulate(table_data, headers=["Template Name", "Command"], tablefmt="fancy_grid"))
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Nmap Template Tool: Easily manage and execute Nmap command templates.",
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+    subparsers = parser.add_subparsers(dest="action", required=True)
+
+    # Create subcommand
+    create_parser = subparsers.add_parser("create", help="Create a new Nmap command template\n\nExample usage:\n  nt create <template_name> <command>  # e.g., nt create ssh_scan 'nmap -p 22 <ip>'")
+    create_parser.add_argument("name", help="The name of the template")
+    create_parser.add_argument("command", help="The Nmap command template (use <ip> as a placeholder)")
+
+    # Execute subcommand
+    execute_parser = subparsers.add_parser("exec", help="Execute a previously saved template\n\nExample usage:\n  nt exec <template_name> <target_ip>  # e.g., nt exec ssh_scan 10.0.0.1")
+    execute_parser.add_argument("name", help="The name of the template")
+    execute_parser.add_argument("ip", help="The target IP address to substitute in the command")
+
+    # List subcommand
+    list_parser = subparsers.add_parser("list", help="List all saved templates\n\nExample usage:\n  nt list")
+ 
+    # Delete subcommand
+    delete_parser = subparsers.add_parser("del", help="Delete a saved template\n\nExample usage:\n  nt del <template_name>  # e.g., nt del ssh_scan")
+    delete_parser.add_argument("name", help="The name of the template to delete")
+
+    args = parser.parse_args()
+
+    if args.action == "create":
+        create_template(args.name, args.command)
+    elif args.action == "exec":
+        execute_template(args.name, args.ip)
+    elif args.action == "del":
+        delete_template(args.name)
+    elif args.action == "list":
+        list_templates()
+
+if __name__ == "__main__":
+    main()
+
