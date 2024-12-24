@@ -28,7 +28,7 @@ A simple command-line tool to create, execute, manage, and delete Nmap scan temp
    git clone https://github.com/yourusername/nmap-template-tool.git
    ```
 2. Make executable:
-  ```bash
+     ```bash
    cd nmap-template-tool
    chmod +x nt
    ```
