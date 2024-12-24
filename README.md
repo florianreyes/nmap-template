@@ -29,9 +29,9 @@ A simple command-line tool to create, execute, manage, and delete Nmap scan temp
    ```
 2. Make executable:
   ```bash
-cd nmap-template-tool
-chmod +x nt
-```
+   cd nmap-template-tool
+   chmod +x nt
+   ```
 3. Move to PATH
 
 ---
