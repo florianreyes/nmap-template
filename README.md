@@ -34,6 +34,8 @@ chmod +x nt
 ```
 3. Move to PATH
 
+---
+
 ### Example Usage
 
 ```bash
